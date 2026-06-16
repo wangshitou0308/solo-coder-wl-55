@@ -31,6 +31,9 @@ def create_score(data: ScoreCreate, db: Session = Depends(get_db)):
     if registration.status != RegistrationStatus.APPROVED:
         raise HTTPException(status_code=400, detail="该报名尚未审核通过，无法打分")
 
+    if registration.event_id != data.event_id:
+        raise HTTPException(status_code=400, detail="报名记录与赛事不匹配")
+
     event = db.query(ContestEvent).filter(ContestEvent.id == data.event_id).first()
     if not event:
         raise HTTPException(status_code=404, detail="赛事不存在")

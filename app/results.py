@@ -61,6 +61,8 @@ def create_award(data: AwardCreate, db: Session = Depends(get_db)):
         ).first()
         if not reg:
             raise HTTPException(status_code=400, detail="该选手未报名此赛事的该组别")
+        if reg.status != RegistrationStatus.APPROVED:
+            raise HTTPException(status_code=400, detail="该选手报名尚未审核通过，无法颁发该组别奖项")
 
     if data.award_type == AwardType.OVERALL_CHAMPION:
         existing = db.query(Award).filter(
@@ -92,7 +94,7 @@ def create_award(data: AwardCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(award)
 
-    recalculate_contestant_points(contestant_id, db)
+    recalculate_contestant_points(data.contestant_id, db)
 
     result = AwardOut.model_validate(award)
     result.contestant_name = contestant.name

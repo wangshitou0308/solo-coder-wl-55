@@ -68,6 +68,23 @@ def update_event(event_id: int, data: ContestEventUpdate, db: Session = Depends(
         raise HTTPException(status_code=404, detail="赛事不存在")
 
     update_data = data.model_dump(exclude_unset=True)
+
+    new_reg_start = update_data.get("registration_start", event.registration_start)
+    new_reg_end = update_data.get("registration_end", event.registration_end)
+    new_event_date = update_data.get("event_date", event.event_date)
+
+    if new_reg_start and new_reg_end:
+        reg_start_naive = new_reg_start.replace(tzinfo=None) if new_reg_start.tzinfo else new_reg_start
+        reg_end_naive = new_reg_end.replace(tzinfo=None) if new_reg_end.tzinfo else new_reg_end
+        if reg_start_naive >= reg_end_naive:
+            raise HTTPException(status_code=400, detail="报名开始时间必须早于结束时间")
+
+    if new_reg_end and new_event_date:
+        reg_end_naive = new_reg_end.replace(tzinfo=None) if new_reg_end.tzinfo else new_reg_end
+        event_date_naive = new_event_date.replace(tzinfo=None) if new_event_date.tzinfo else new_event_date
+        if reg_end_naive >= event_date_naive:
+            raise HTTPException(status_code=400, detail="报名结束时间必须早于比赛日期")
+
     for key, value in update_data.items():
         setattr(event, key, value)
 
